@@ -1,0 +1,47 @@
+# GitHub Action for generating a contribution graph with a snake eating your contributions.
+name: Generate Snake
+
+on:
+  schedule:
+    # 每12小时自动更新一次（UTC时间）
+    - cron: "0 */12 * * *"
+  workflow_dispatch:  # 允许手动触发
+  push:               # 推代码到main分支时自动运行
+    branches:
+      - main
+
+permissions:
+  contents: write  # 允许Action写入文件
+
+jobs:
+  build:
+    runs-on: ubuntu-latest  # 使用GitHub云服务器运行
+
+    steps:
+      - name: Clone repo
+        uses: actions/checkout@v4  # 拉取仓库代码
+
+      - name: Generate the snake files in './dist/'
+        uses: Platane/snk@v3  # 核心工具：生成贪吃蛇动画
+        id: snake-gif
+        with:
+          github_user_name: ${{ github.repository_owner }}  # 自动获取你的用户名
+          outputs: |
+            # 生成3种格式：普通SVG、深色SVG、彩色GIF
+            dist/github-contribution-grid-snake.svg
+            dist/github-contribution-grid-snake-dark.svg?palette=github-dark
+            dist/github-contribution-grid-snake.gif?color_snake=orange&color_dots=#bfd6f6,#8dbdff,#64a1f4,#4b91f1,#3c7dd9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 自动获取GitHub密钥
+
+      - name: Show build status
+        run: git status  # 显示文件状态
+
+      - name: Push new files to the output branch
+        uses: crazy-max/ghaction-github-pages@v3.1.0  # 自动上传到output分支
+        with:
+          target_branch: output  # 输出分支名
+          build_dir: dist        # 动画文件存放目录
+          commit_message: Update snake animations  # 提交信息
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
